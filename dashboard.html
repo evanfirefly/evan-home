@@ -140,9 +140,21 @@
     <script>
         async function fetchData() {
             try {
-                // Fetch market data
-                const marketRes = await fetch('/api/market');
-                const market = await marketRes.json();
+                // Fetch market data directly from Binance (client-side)
+                let market = { success: true, data: { btc: {}, eth: {}, sol: {} } };
+                try {
+                    const [btcRes, ethRes, solRes] = await Promise.all([
+                        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'),
+                        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT'),
+                        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=SOLUSDT')
+                    ]);
+                    const [btc, eth, sol] = await Promise.all([btcRes.json(), ethRes.json(), solRes.json()]);
+                    market.data.btc = { price: parseFloat(btc.lastPrice), change: parseFloat(btc.priceChangePercent) };
+                    market.data.eth = { price: parseFloat(eth.lastPrice), change: parseFloat(eth.priceChangePercent) };
+                    market.data.sol = { price: parseFloat(sol.lastPrice), change: parseFloat(sol.priceChangePercent) };
+                } catch (e) {
+                    console.error('Binance API error:', e);
+                }
                 if (market.success) {
                     const m = market.data;
                     document.getElementById('market').innerHTML = `
