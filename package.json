@@ -1,0 +1,11 @@
+{
+  "name": "evan-home",
+  "version": "1.0.0",
+  "description": "Evan's personal home page - 一束小小的光",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Evan Firefly",
+  "license": "MIT"
+}
