@@ -7,23 +7,25 @@ const PORT = process.env.PORT || 3000;
 const WALLET_ADDRESS = '3UcvGwXci9Xi73EBwaj6NmVvx8iHVqh5eomuTuLa6QTw';
 const USDT_MINT = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
 
-// Helper to fetch JSON
-function fetchJson(url) {
+// Helper to fetch JSON with timeout
+function fetchJson(url, timeout = 10000) {
     return new Promise((resolve, reject) => {
         const lib = url.startsWith('https') ? https : http;
-        lib.get(url, (res) => {
+        const req = lib.get(url, { timeout }, (res) => {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
                 try { resolve(JSON.parse(data)); }
-                catch (e) { reject(e); }
+                catch (e) { reject(new Error('Invalid JSON')); }
             });
-        }).on('error', reject);
+        });
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
     });
 }
 
 // Helper to POST JSON
-function postJson(url, body) {
+function postJson(url, body, timeout = 10000) {
     return new Promise((resolve, reject) => {
         const urlObj = new URL(url);
         const options = {
@@ -31,33 +33,75 @@ function postJson(url, body) {
             port: urlObj.port || 443,
             path: urlObj.pathname,
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            timeout
         };
         const req = https.request(options, (res) => {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
                 try { resolve(JSON.parse(data)); }
-                catch (e) { reject(e); }
+                catch (e) { reject(new Error('Invalid JSON')); }
             });
         });
         req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
         req.write(JSON.stringify(body));
         req.end();
     });
 }
 
-// Get market prices
+// Get market prices using DexScreener (more reliable)
 async function getMarketPrices() {
     try {
-        const data = await fetchJson('https://api.coingecko.com/api/v3/simple/price?ids=solana,bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
+        // Get SOL price from DexScreener
+        const solData = await fetchJson('https://api.dexscreener.com/latest/dex/tokens/So11111111111111111111111111111111111111112');
+        
+        // Find SOL/USDT pair on Raydium (most liquid)
+        const solPair = solData.pairs?.find(p => 
+            p.chainId === 'solana' && 
+            p.quoteToken?.symbol === 'USDT' &&
+            p.dexId === 'raydium'
+        ) || solData.pairs?.[0];
+        
+        const solPrice = parseFloat(solPair?.priceUsd) || 0;
+        const solChange = solPair?.priceChange?.h24 || 0;
+
+        // Try CoinGecko for BTC/ETH with fallback
+        let btcPrice = 0, btcChange = 0, ethPrice = 0, ethChange = 0;
+        try {
+            const cgData = await fetchJson('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true', 5000);
+            btcPrice = cgData.bitcoin?.usd || 0;
+            btcChange = cgData.bitcoin?.usd_24h_change || 0;
+            ethPrice = cgData.ethereum?.usd || 0;
+            ethChange = cgData.ethereum?.usd_24h_change || 0;
+        } catch (e) {
+            // Fallback: use CoinCap
+            try {
+                const btcData = await fetchJson('https://api.coincap.io/v2/assets/bitcoin', 5000);
+                const ethData = await fetchJson('https://api.coincap.io/v2/assets/ethereum', 5000);
+                btcPrice = parseFloat(btcData.data?.priceUsd) || 0;
+                btcChange = parseFloat(btcData.data?.changePercent24Hr) || 0;
+                ethPrice = parseFloat(ethData.data?.priceUsd) || 0;
+                ethChange = parseFloat(ethData.data?.changePercent24Hr) || 0;
+            } catch (e2) {
+                console.log('Price API fallback also failed');
+            }
+        }
+
         return {
-            btc: { price: data.bitcoin?.usd, change: data.bitcoin?.usd_24h_change },
-            eth: { price: data.ethereum?.usd, change: data.ethereum?.usd_24h_change },
-            sol: { price: data.solana?.usd, change: data.solana?.usd_24h_change }
+            btc: { price: btcPrice, change: btcChange },
+            eth: { price: ethPrice, change: ethChange },
+            sol: { price: solPrice, change: solChange }
         };
     } catch (e) {
-        return { error: e.message };
+        console.error('getMarketPrices error:', e.message);
+        return { 
+            btc: { price: 0, change: 0 },
+            eth: { price: 0, change: 0 },
+            sol: { price: 0, change: 0 },
+            error: e.message 
+        };
     }
 }
 
@@ -81,11 +125,15 @@ async function getWalletBalance() {
 
         return { sol: solBalance, usdt: usdtBalance };
     } catch (e) {
-        return { error: e.message };
+        console.error('getWalletBalance error:', e.message);
+        return { sol: 0, usdt: 0, error: e.message };
     }
 }
 
 const server = http.createServer(async (req, res) => {
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
     // Home page
     if (req.url === '/' || req.url === '/index.html') {
         fs.readFile(path.join(__dirname, 'index.html'), (err, data) => {
