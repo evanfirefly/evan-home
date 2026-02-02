@@ -51,49 +51,28 @@ function postJson(url, body, timeout = 10000) {
     });
 }
 
-// Get market prices using DexScreener (more reliable)
+// Get single Binance ticker
+async function getBinanceTicker(symbol) {
+    try {
+        const data = await fetchJson(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`, 5000);
+        return {
+            price: parseFloat(data.lastPrice) || 0,
+            change: parseFloat(data.priceChangePercent) || 0
+        };
+    } catch (e) {
+        return { price: 0, change: 0 };
+    }
+}
+
+// Get market prices using Binance API
 async function getMarketPrices() {
     try {
-        // Get SOL price from DexScreener
-        const solData = await fetchJson('https://api.dexscreener.com/latest/dex/tokens/So11111111111111111111111111111111111111112');
-        
-        // Find SOL/USDT pair on Raydium (most liquid)
-        const solPair = solData.pairs?.find(p => 
-            p.chainId === 'solana' && 
-            p.quoteToken?.symbol === 'USDT' &&
-            p.dexId === 'raydium'
-        ) || solData.pairs?.[0];
-        
-        const solPrice = parseFloat(solPair?.priceUsd) || 0;
-        const solChange = solPair?.priceChange?.h24 || 0;
-
-        // Try CoinGecko for BTC/ETH with fallback
-        let btcPrice = 0, btcChange = 0, ethPrice = 0, ethChange = 0;
-        try {
-            const cgData = await fetchJson('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true', 5000);
-            btcPrice = cgData.bitcoin?.usd || 0;
-            btcChange = cgData.bitcoin?.usd_24h_change || 0;
-            ethPrice = cgData.ethereum?.usd || 0;
-            ethChange = cgData.ethereum?.usd_24h_change || 0;
-        } catch (e) {
-            // Fallback: use CoinCap
-            try {
-                const btcData = await fetchJson('https://api.coincap.io/v2/assets/bitcoin', 5000);
-                const ethData = await fetchJson('https://api.coincap.io/v2/assets/ethereum', 5000);
-                btcPrice = parseFloat(btcData.data?.priceUsd) || 0;
-                btcChange = parseFloat(btcData.data?.changePercent24Hr) || 0;
-                ethPrice = parseFloat(ethData.data?.priceUsd) || 0;
-                ethChange = parseFloat(ethData.data?.changePercent24Hr) || 0;
-            } catch (e2) {
-                console.log('Price API fallback also failed');
-            }
-        }
-
-        return {
-            btc: { price: btcPrice, change: btcChange },
-            eth: { price: ethPrice, change: ethChange },
-            sol: { price: solPrice, change: solChange }
-        };
+        const [btc, eth, sol] = await Promise.all([
+            getBinanceTicker('BTCUSDT'),
+            getBinanceTicker('ETHUSDT'),
+            getBinanceTicker('SOLUSDT')
+        ]);
+        return { btc, eth, sol };
     } catch (e) {
         console.error('getMarketPrices error:', e.message);
         return { 
