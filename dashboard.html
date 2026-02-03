@@ -1,349 +1,649 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evan's Dashboard ✨</title>
-    <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
-            min-height: 100vh;
-            color: #fff;
-            padding: 2rem;
-        }
-        .container { max-width: 900px; margin: 0 auto; }
-        header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        header h1 { font-size: 2rem; font-weight: 300; }
-        header .emoji { font-size: 2.5rem; }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-        }
-        .card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 1.5rem;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .card h2 {
-            font-size: 0.9rem;
-            color: #888;
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .price-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .price-row:last-child { border-bottom: none; }
-        .coin-name { font-weight: 500; }
-        .coin-price { font-size: 1.1rem; }
-        .change { font-size: 0.85rem; padding: 0.2rem 0.5rem; border-radius: 4px; }
-        .change.up { background: rgba(0,200,100,0.2); color: #00c864; }
-        .change.down { background: rgba(255,80,80,0.2); color: #ff5050; }
-        .balance-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.75rem 0;
-        }
-        .balance-value { font-size: 1.5rem; font-weight: 600; color: #ffd700; }
-        .balance-usd { color: #888; font-size: 0.9rem; }
-        .wallet-addr {
-            font-size: 0.7rem;
-            color: #555;
-            word-break: break-all;
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        .status-dot {
-            width: 8px; height: 8px;
-            background: #00c864;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .update-time { color: #555; font-size: 0.8rem; text-align: center; margin-top: 2rem; }
-        .home-link { text-align: center; margin-top: 1rem; }
-        .home-link a { color: #ffd700; text-decoration: none; }
-        .loading { color: #555; }
-        .rules {
-            font-size: 0.85rem;
-            line-height: 1.8;
-            color: #888;
-        }
-        .rules li { margin-bottom: 0.5rem; }
-        .rule-warn { color: #ff5050; }
-        .rule-safe { color: #00c864; }
-        .chart-card { grid-column: 1 / -1; }
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        .chart-container { height: 350px; border-radius: 8px; overflow: hidden; }
-        .period-btns { display: flex; gap: 0.5rem; }
-        .period-btn {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: #888;
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-        .period-btn.active { background: #ffd700; color: #000; }
-        .indicators-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-top: 1rem; }
-        .indicator-item { text-align: center; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px; }
-        .indicator-label { font-size: 0.75rem; color: #666; margin-bottom: 0.3rem; }
-        .indicator-value { font-size: 1.1rem; font-weight: 600; }
-        .indicator-signal { font-size: 0.7rem; margin-top: 0.2rem; }
-        .bullish { color: #00c864; }
-        .bearish { color: #ff5050; }
-        .neutral { color: #888; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { margin-bottom: 30px; font-size: 24px; }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .label { color: #8b949e; font-size: 14px; margin-bottom: 8px; }
+    .wallet-address {
+      font-family: monospace;
+      font-size: 14px;
+      word-break: break-all;
+      color: #58a6ff;
+      margin-bottom: 24px;
+    }
+    .balance {
+      font-size: 36px;
+      font-weight: 600;
+    }
+    .balance-label { color: #8b949e; font-size: 14px; }
+    .usd-value {
+      font-size: 20px;
+      color: #7ee787;
+      margin-top: 4px;
+    }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #30363d;
+    }
+    .price {
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .loading { color: #8b949e; }
+    .error { color: #f85149; }
+    .refresh-btn {
+      margin-top: 20px;
+      padding: 8px 16px;
+      background: #238636;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .refresh-btn:hover { background: #2ea043; }
+
+    /* History section */
+    .history-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #30363d;
+    }
+    .period-selector {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .period-btn {
+      padding: 6px 12px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .period-btn:hover { border-color: #58a6ff; }
+    .period-btn.active {
+      background: #388bfd26;
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+    .ohlc-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    .ohlc-table th {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #30363d;
+      color: #8b949e;
+      font-weight: 500;
+    }
+    .ohlc-table td {
+      padding: 8px;
+      border-bottom: 1px solid #21262d;
+    }
+    .ohlc-table tr:hover { background: #21262d; }
+    .positive { color: #7ee787; }
+    .negative { color: #f85149; }
+    .table-container {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    /* Technical Indicators */
+    .indicators-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #30363d;
+    }
+    .indicators-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .indicator-card {
+      background: #21262d;
+      border-radius: 6px;
+      padding: 12px;
+    }
+    .indicator-title {
+      font-size: 12px;
+      color: #8b949e;
+      margin-bottom: 8px;
+    }
+    .indicator-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .indicator-signal {
+      font-size: 11px;
+      margin-top: 4px;
+    }
+    .signal-bullish { color: #7ee787; }
+    .signal-bearish { color: #f85149; }
+    .signal-neutral { color: #8b949e; }
+    .ma-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ma-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .ma-label { color: #8b949e; }
+
+    /* Symbol Selector */
+    .symbol-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .symbol-btn {
+      padding: 8px 16px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .symbol-btn:hover { border-color: #58a6ff; }
+    .symbol-btn.active {
+      background: #388bfd26;
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+
+    /* Chart Section */
+    .chart-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #30363d;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .chart-period-selector {
+      display: flex;
+      gap: 8px;
+    }
+    .chart-period-btn {
+      padding: 6px 12px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .chart-period-btn:hover { border-color: #58a6ff; }
+    .chart-period-btn.active {
+      background: #388bfd26;
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+    #chart-container {
+      width: 100%;
+      height: 400px;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #161b22;
+    }
+  </style>
+  <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="emoji">✨</div>
-            <h1>Evan's Trading Dashboard</h1>
-        </header>
-
-        <div class="grid">
-            <!-- Market Prices -->
-            <div class="card">
-                <h2>📊 市场行情</h2>
-                <div id="market" class="loading">加载中...</div>
-            </div>
-
-            <!-- Wallet Balance -->
-            <div class="card">
-                <h2>💰 我的钱包</h2>
-                <div class="status">
-                    <div class="status-dot"></div>
-                    <span style="color:#00c864; font-size:0.85rem;">在线</span>
-                </div>
-                <div id="wallet" class="loading">加载中...</div>
-            </div>
-
-            <!-- Trading Rules -->
-            <div class="card">
-                <h2>📜 交易规则</h2>
-                <ul class="rules">
-                    <li class="rule-warn">🔒 保底资金 100U 绝不动用</li>
-                    <li>📊 单笔最大仓位: 20U (10%)</li>
-                    <li>⛔ 单笔止损: -25%</li>
-                    <li class="rule-safe">✅ 只用主流 DEX</li>
-                    <li class="rule-warn">❌ 不给陌生应用授权</li>
-                </ul>
-            </div>
-
-            <!-- K-Line Chart -->
-            <div class="card chart-card">
-                <div class="chart-header">
-                    <h2>📈 SOL K线图</h2>
-                    <div class="period-btns">
-                        <button class="period-btn" data-period="1d">1D</button>
-                        <button class="period-btn active" data-period="7d">7D</button>
-                        <button class="period-btn" data-period="30d">30D</button>
-                    </div>
-                </div>
-                <div id="chartContainer" class="chart-container"></div>
-                <div id="indicators" class="indicators-grid">
-                    <div class="indicator-item">
-                        <div class="indicator-label">MA(7)</div>
-                        <div class="indicator-value" id="ma7">-</div>
-                    </div>
-                    <div class="indicator-item">
-                        <div class="indicator-label">MA(20)</div>
-                        <div class="indicator-value" id="ma20">-</div>
-                    </div>
-                    <div class="indicator-item">
-                        <div class="indicator-label">MA(50)</div>
-                        <div class="indicator-value" id="ma50">-</div>
-                    </div>
-                    <div class="indicator-item">
-                        <div class="indicator-label">RSI(14)</div>
-                        <div class="indicator-value" id="rsi14">-</div>
-                        <div class="indicator-signal" id="rsiSignal">-</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <p class="update-time">上次更新: <span id="updateTime">-</span></p>
-        <p class="home-link"><a href="/">← 返回首页</a></p>
+  <div class="container">
+    <h1>Trading Dashboard</h1>
+    
+    <!-- Symbol Selector -->
+    <div class="symbol-selector">
+      <button class="symbol-btn active" data-symbol="SOL">SOL</button>
+      <button class="symbol-btn" data-symbol="BTC">BTC</button>
+      <button class="symbol-btn" data-symbol="ETH">ETH</button>
     </div>
 
-    <script>
-        async function fetchData() {
-            try {
-                // Fetch market data directly from Binance (client-side)
-                let market = { success: true, data: { btc: {}, eth: {}, sol: {} } };
-                try {
-                    const [btcRes, ethRes, solRes] = await Promise.all([
-                        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'),
-                        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT'),
-                        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=SOLUSDT')
-                    ]);
-                    const [btc, eth, sol] = await Promise.all([btcRes.json(), ethRes.json(), solRes.json()]);
-                    market.data.btc = { price: parseFloat(btc.lastPrice), change: parseFloat(btc.priceChangePercent) };
-                    market.data.eth = { price: parseFloat(eth.lastPrice), change: parseFloat(eth.priceChangePercent) };
-                    market.data.sol = { price: parseFloat(sol.lastPrice), change: parseFloat(sol.priceChangePercent) };
-                } catch (e) {
-                    console.error('Binance API error:', e);
-                }
-                if (market.success) {
-                    const m = market.data;
-                    document.getElementById('market').innerHTML = `
-                        <div class="price-row">
-                            <span class="coin-name">BTC</span>
-                            <span class="coin-price">$${m.btc.price?.toLocaleString() || '-'}</span>
-                            <span class="change ${m.btc.change >= 0 ? 'up' : 'down'}">${m.btc.change >= 0 ? '+' : ''}${m.btc.change?.toFixed(2) || '-'}%</span>
-                        </div>
-                        <div class="price-row">
-                            <span class="coin-name">ETH</span>
-                            <span class="coin-price">$${m.eth.price?.toLocaleString() || '-'}</span>
-                            <span class="change ${m.eth.change >= 0 ? 'up' : 'down'}">${m.eth.change >= 0 ? '+' : ''}${m.eth.change?.toFixed(2) || '-'}%</span>
-                        </div>
-                        <div class="price-row">
-                            <span class="coin-name">SOL</span>
-                            <span class="coin-price">$${m.sol.price?.toLocaleString() || '-'}</span>
-                            <span class="change ${m.sol.change >= 0 ? 'up' : 'down'}">${m.sol.change >= 0 ? '+' : ''}${m.sol.change?.toFixed(2) || '-'}%</span>
-                        </div>
-                    `;
-                }
+    <div class="card">
+      <div class="label">Wallet Address</div>
+      <div class="wallet-address" id="address">3UcvGwXci9Xi73EBwaj6NmVvx8iHVqh5eomuTuLa6QTw</div>
+      <div class="label">SOL Balance</div>
+      <div class="balance" id="balance"><span class="loading">Loading...</span></div>
+      <div class="usd-value" id="usd-value"></div>
 
-                // Fetch wallet data
-                const walletRes = await fetch('/api/wallet');
-                const wallet = await walletRes.json();
-                if (wallet.success) {
-                    const w = wallet.data;
-                    const solUsd = (w.sol * (market.data?.sol?.price || 100)).toFixed(2);
-                    const totalUsd = (parseFloat(solUsd) + w.usdt).toFixed(2);
-                    document.getElementById('wallet').innerHTML = `
-                        <div class="balance-item">
-                            <span>SOL</span>
-                            <div>
-                                <div class="balance-value">${w.sol?.toFixed(4) || '0'}</div>
-                                <div class="balance-usd">≈ $${solUsd}</div>
-                            </div>
-                        </div>
-                        <div class="balance-item">
-                            <span>USDT</span>
-                            <div>
-                                <div class="balance-value">${w.usdt?.toFixed(2) || '0'}</div>
-                            </div>
-                        </div>
-                        <div class="balance-item" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 0.5rem; padding-top: 1rem;">
-                            <span>总计</span>
-                            <div class="balance-value">≈ $${totalUsd}</div>
-                        </div>
-                        <div class="wallet-addr">📍 ${wallet.address}</div>
-                    `;
-                }
+      <div class="price-row">
+        <div>
+          <div class="label">SOL Price</div>
+          <div class="price" id="sol-price"><span class="loading">Loading...</span></div>
+        </div>
+      </div>
 
-                document.getElementById('updateTime').textContent = new Date().toLocaleString('zh-CN');
-            } catch (e) {
-                console.error(e);
-            }
+      <button class="refresh-btn" onclick="refreshAll()">Refresh</button>
+
+      <!-- K-Line Chart Section -->
+      <div class="chart-section">
+        <div class="chart-header">
+          <div class="label">SOL K-Line Chart</div>
+          <div class="chart-period-selector">
+            <button class="chart-period-btn" data-chart-period="1d">1D</button>
+            <button class="chart-period-btn active" data-chart-period="7d">7D</button>
+            <button class="chart-period-btn" data-chart-period="30d">30D</button>
+          </div>
+        </div>
+        <div id="chart-container"></div>
+      </div>
+
+      <!-- Technical Indicators Section -->
+      <div class="indicators-section">
+        <div class="label">Technical Indicators (SOL)</div>
+        <div class="indicators-grid">
+          <div class="indicator-card">
+            <div class="indicator-title">Moving Averages</div>
+            <div class="ma-list" id="ma-values">
+              <span class="loading">Loading...</span>
+            </div>
+          </div>
+          <div class="indicator-card">
+            <div class="indicator-title">RSI (14)</div>
+            <div class="indicator-value" id="rsi-value">
+              <span class="loading">Loading...</span>
+            </div>
+            <div class="indicator-signal" id="rsi-signal"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Section -->
+      <div class="history-section">
+        <div class="label">SOL Price History (OHLC)</div>
+        <div class="period-selector">
+          <button class="period-btn" data-period="1d">1D</button>
+          <button class="period-btn active" data-period="7d">7D</button>
+          <button class="period-btn" data-period="30d">30D</button>
+          <button class="period-btn" data-period="90d">90D</button>
+        </div>
+        <div class="table-container">
+          <table class="ohlc-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Open</th>
+                <th>High</th>
+                <th>Low</th>
+                <th>Close</th>
+                <th>Change</th>
+              </tr>
+            </thead>
+            <tbody id="ohlc-body">
+              <tr><td colspan="6" class="loading">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WALLET_ADDRESS = '3UcvGwXci9Xi73EBwaj6NmVvx8iHVqh5eomuTuLa6QTw';
+    const LAMPORTS_PER_SOL = 1_000_000_000;
+    const SOL_MINT = 'So11111111111111111111111111111111111111112';
+
+    // Supported symbols
+    const SYMBOLS = {
+      SOL: { name: 'Solana', mint: 'So11111111111111111111111111111111111111112' },
+      BTC: { name: 'Bitcoin', mint: null },
+      ETH: { name: 'Ethereum', mint: null }
+    };
+
+    let currentSymbol = 'SOL';
+    let currentSolPrice = null;
+    let currentSolBalance = null;
+
+    function updateUsdValue() {
+      const usdValueEl = document.getElementById('usd-value');
+      if (currentSolPrice && currentSolBalance) {
+        const usdValue = (currentSolBalance * currentSolPrice).toFixed(2);
+        usdValueEl.textContent = `≈ $${usdValue} USD`;
+      } else {
+        usdValueEl.textContent = '';
+      }
+    }
+
+    async function fetchPrice() {
+      const priceEl = document.getElementById('sol-price');
+      priceEl.innerHTML = '<span class="loading">Loading...</span>';
+
+      try {
+        const response = await fetch('/api/price');
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
         }
 
-        fetchData();
-        setInterval(fetchData, 30000); // Update every 30s
-
-        // K-Line Chart
-        let chart, candlestickSeries;
-        let currentPeriod = '7d';
-
-        function initChart() {
-            const container = document.getElementById('chartContainer');
-            chart = LightweightCharts.createChart(container, {
-                layout: { background: { color: 'transparent' }, textColor: '#888' },
-                grid: { vertLines: { color: 'rgba(255,255,255,0.05)' }, horzLines: { color: 'rgba(255,255,255,0.05)' } },
-                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                rightPriceScale: { borderColor: 'rgba(255,255,255,0.1)' },
-                timeScale: { borderColor: 'rgba(255,255,255,0.1)', timeVisible: true }
-            });
-            candlestickSeries = chart.addCandlestickSeries({
-                upColor: '#00c864', downColor: '#ff5050',
-                borderUpColor: '#00c864', borderDownColor: '#ff5050',
-                wickUpColor: '#00c864', wickDownColor: '#ff5050'
-            });
-            chart.timeScale().fitContent();
+        const priceData = data.data[SOL_MINT];
+        if (priceData && priceData.price) {
+          currentSolPrice = parseFloat(priceData.price);
+          priceEl.innerHTML = `$${currentSolPrice.toFixed(2)} <span class="balance-label">USD</span>`;
+          updateUsdValue();
+        } else {
+          throw new Error('Price data not available');
         }
+      } catch (error) {
+        priceEl.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+        currentSolPrice = null;
+      }
+    }
 
-        async function loadChartData(period = '7d') {
-            try {
-                const res = await fetch(`/api/history/SOL?period=${period}`);
-                const json = await res.json();
-                if (json.data) {
-                    const chartData = json.data.map(([time, open, high, low, close]) => ({
-                        time: Math.floor(time / 1000),
-                        open, high, low, close
-                    }));
-                    candlestickSeries.setData(chartData);
-                    chart.timeScale().fitContent();
-                }
-            } catch (e) { console.error('Chart error:', e); }
-        }
+    async function fetchBalance() {
+      const balanceEl = document.getElementById('balance');
+      balanceEl.innerHTML = '<span class="loading">Loading...</span>';
 
-        async function loadIndicators() {
-            try {
-                const res = await fetch('/api/indicators/SOL');
-                const json = await res.json();
-                if (json.indicators) {
-                    const { ma, rsi } = json.indicators;
-                    document.getElementById('ma7').textContent = ma.ma7 ? `$${ma.ma7}` : '-';
-                    document.getElementById('ma20').textContent = ma.ma20 ? `$${ma.ma20}` : '-';
-                    document.getElementById('ma50').textContent = ma.ma50 ? `$${ma.ma50}` : '-';
-                    const rsiVal = parseFloat(rsi.rsi14);
-                    document.getElementById('rsi14').textContent = rsi.rsi14 || '-';
-                    const rsiSignal = document.getElementById('rsiSignal');
-                    if (rsiVal >= 70) { rsiSignal.textContent = '超买'; rsiSignal.className = 'indicator-signal bearish'; }
-                    else if (rsiVal <= 30) { rsiSignal.textContent = '超卖'; rsiSignal.className = 'indicator-signal bullish'; }
-                    else { rsiSignal.textContent = '中性'; rsiSignal.className = 'indicator-signal neutral'; }
-                }
-            } catch (e) { console.error('Indicators error:', e); }
-        }
-
-        // Period button handlers
-        document.querySelectorAll('.period-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentPeriod = btn.dataset.period;
-                loadChartData(currentPeriod);
-            });
+      try {
+        const response = await fetch('/api/balance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: WALLET_ADDRESS })
         });
 
-        // Initialize chart
-        initChart();
-        loadChartData(currentPeriod);
-        loadIndicators();
-        setInterval(() => { loadChartData(currentPeriod); loadIndicators(); }, 60000);
-    </script>
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error.message || data.error);
+        }
+
+        currentSolBalance = data.result.value / LAMPORTS_PER_SOL;
+        balanceEl.innerHTML = `${currentSolBalance.toFixed(4)} <span class="balance-label">SOL</span>`;
+        updateUsdValue();
+      } catch (error) {
+        balanceEl.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+        currentSolBalance = null;
+      }
+    }
+
+    let currentPeriod = '7d';
+
+    async function fetchHistory(period = currentPeriod) {
+      const tbody = document.getElementById('ohlc-body');
+      tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading...</td></tr>';
+
+      try {
+        const response = await fetch(`/api/history/${currentSymbol}?period=${period}`);
+        const result = await response.json();
+
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        if (!result.data || result.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6">No data available</td></tr>';
+          return;
+        }
+
+        // Reverse to show most recent first
+        const rows = result.data.slice().reverse().map(([timestamp, open, high, low, close]) => {
+          const date = new Date(timestamp);
+          const timeStr = date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          const change = ((close - open) / open * 100).toFixed(2);
+          const changeClass = change >= 0 ? 'positive' : 'negative';
+          const changePrefix = change >= 0 ? '+' : '';
+
+          return `<tr>
+            <td>${timeStr}</td>
+            <td>$${open.toFixed(2)}</td>
+            <td>$${high.toFixed(2)}</td>
+            <td>$${low.toFixed(2)}</td>
+            <td>$${close.toFixed(2)}</td>
+            <td class="${changeClass}">${changePrefix}${change}%</td>
+          </tr>`;
+        }).join('');
+
+        tbody.innerHTML = rows;
+      } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="6" class="error">Error: ${error.message}</td></tr>`;
+      }
+    }
+
+    // Period button handlers
+    document.querySelectorAll('.period-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPeriod = btn.dataset.period;
+        fetchHistory(currentPeriod);
+      });
+    });
+
+    async function fetchIndicators() {
+      const maValues = document.getElementById('ma-values');
+      const rsiValue = document.getElementById('rsi-value');
+      const rsiSignal = document.getElementById('rsi-signal');
+
+      maValues.innerHTML = '<span class="loading">Loading...</span>';
+      rsiValue.innerHTML = '<span class="loading">Loading...</span>';
+      rsiSignal.textContent = '';
+
+      try {
+        const response = await fetch(`/api/indicators/${currentSymbol}`);
+        const result = await response.json();
+
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        const { ma, rsi } = result.indicators;
+        const price = result.price;
+
+        // Display MAs with trend signals
+        const maHtml = [
+          { label: 'MA(7)', value: ma.ma7 },
+          { label: 'MA(20)', value: ma.ma20 },
+          { label: 'MA(50)', value: ma.ma50 }
+        ].map(({ label, value }) => {
+          if (value === null) return `<div class="ma-item"><span class="ma-label">${label}</span><span>N/A</span></div>`;
+          const signalClass = price > value ? 'positive' : 'negative';
+          return `<div class="ma-item">
+            <span class="ma-label">${label}</span>
+            <span class="${signalClass}">$${value.toFixed(2)}</span>
+          </div>`;
+        }).join('');
+
+        maValues.innerHTML = maHtml;
+
+        // Display RSI with interpretation
+        if (rsi.rsi14 !== null) {
+          const rsiVal = rsi.rsi14;
+          rsiValue.textContent = rsiVal.toFixed(2);
+
+          let signal, signalClass;
+          if (rsiVal >= 70) {
+            signal = 'Overbought';
+            signalClass = 'signal-bearish';
+          } else if (rsiVal <= 30) {
+            signal = 'Oversold';
+            signalClass = 'signal-bullish';
+          } else {
+            signal = 'Neutral';
+            signalClass = 'signal-neutral';
+          }
+
+          rsiSignal.textContent = signal;
+          rsiSignal.className = `indicator-signal ${signalClass}`;
+        } else {
+          rsiValue.textContent = 'N/A';
+        }
+      } catch (error) {
+        maValues.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+        rsiValue.innerHTML = `<span class="error">Error</span>`;
+      }
+    }
+
+    // K-Line Chart
+    let chart = null;
+    let candlestickSeries = null;
+    let chartPeriod = '7d';
+
+    function initChart() {
+      const container = document.getElementById('chart-container');
+
+      // Ensure container has dimensions
+      const width = container.clientWidth || 560;
+      const height = container.clientHeight || 400;
+
+      chart = LightweightCharts.createChart(container, {
+        width: width,
+        height: height,
+        layout: {
+          background: { type: 'solid', color: '#161b22' },
+          textColor: '#8b949e',
+        },
+        grid: {
+          vertLines: { color: '#21262d' },
+          horzLines: { color: '#21262d' },
+        },
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+          borderColor: '#30363d',
+        },
+        timeScale: {
+          borderColor: '#30363d',
+          timeVisible: true,
+          secondsVisible: false,
+        },
+      });
+
+      candlestickSeries = chart.addCandlestickSeries({
+        upColor: '#7ee787',
+        downColor: '#f85149',
+        borderUpColor: '#7ee787',
+        borderDownColor: '#f85149',
+        wickUpColor: '#7ee787',
+        wickDownColor: '#f85149',
+      });
+
+      // Responsive resize
+      window.addEventListener('resize', () => {
+        chart.applyOptions({
+          width: container.clientWidth,
+          height: container.clientHeight
+        });
+      });
+    }
+
+    async function fetchChartData(period = chartPeriod) {
+      try {
+        const response = await fetch(`/api/history/${currentSymbol}?period=${period}`);
+        const result = await response.json();
+
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        if (!result.data || result.data.length === 0) {
+          console.warn('No chart data available');
+          return;
+        }
+
+        // Convert data to candlestick format and sort by time
+        const candleData = result.data
+          .map(([timestamp, open, high, low, close]) => ({
+            time: Math.floor(timestamp / 1000), // Convert to seconds
+            open: parseFloat(open),
+            high: parseFloat(high),
+            low: parseFloat(low),
+            close: parseFloat(close),
+          }))
+          .sort((a, b) => a.time - b.time); // Ensure sorted by time ascending
+
+        // Remove duplicates (same timestamp)
+        const uniqueData = candleData.filter((item, index, arr) =>
+          index === 0 || item.time !== arr[index - 1].time
+        );
+
+        candlestickSeries.setData(uniqueData);
+        chart.timeScale().fitContent();
+      } catch (error) {
+        console.error('Failed to fetch chart data:', error);
+      }
+    }
+
+    // Chart period button handlers
+    document.querySelectorAll('.chart-period-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.chart-period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        chartPeriod = btn.dataset.chartPeriod;
+        fetchChartData(chartPeriod);
+      });
+    });
+
+    function refreshAll() {
+      fetchBalance();
+      fetchPrice();
+      fetchHistory();
+      fetchIndicators();
+      fetchChartData();
+    }
+
+    // Symbol selector handlers
+    document.querySelectorAll('.symbol-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.symbol-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentSymbol = btn.dataset.symbol;
+        // Update labels
+        document.querySelector('.chart-header .label').textContent = `${currentSymbol} K-Line Chart`;
+        document.querySelector('.indicators-section .label').textContent = `Technical Indicators (${currentSymbol})`;
+        document.querySelector('.history-section .label').textContent = `${currentSymbol} Price History (OHLC)`;
+        // Refresh data for new symbol
+        fetchHistory();
+        fetchIndicators();
+        fetchChartData();
+      });
+    });
+
+    // Initialize chart on load
+    initChart();
+    refreshAll();
+  </script>
 </body>
 </html>
