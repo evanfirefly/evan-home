@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evan's Dashboard ✨</title>
+    <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -94,6 +95,33 @@
         .rules li { margin-bottom: 0.5rem; }
         .rule-warn { color: #ff5050; }
         .rule-safe { color: #00c864; }
+        .chart-card { grid-column: 1 / -1; }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .chart-container { height: 350px; border-radius: 8px; overflow: hidden; }
+        .period-btns { display: flex; gap: 0.5rem; }
+        .period-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #888;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .period-btn.active { background: #ffd700; color: #000; }
+        .indicators-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .indicator-item { text-align: center; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px; }
+        .indicator-label { font-size: 0.75rem; color: #666; margin-bottom: 0.3rem; }
+        .indicator-value { font-size: 1.1rem; font-weight: 600; }
+        .indicator-signal { font-size: 0.7rem; margin-top: 0.2rem; }
+        .bullish { color: #00c864; }
+        .bearish { color: #ff5050; }
+        .neutral { color: #888; }
     </style>
 </head>
 <body>
@@ -130,6 +158,38 @@
                     <li class="rule-safe">✅ 只用主流 DEX</li>
                     <li class="rule-warn">❌ 不给陌生应用授权</li>
                 </ul>
+            </div>
+
+            <!-- K-Line Chart -->
+            <div class="card chart-card">
+                <div class="chart-header">
+                    <h2>📈 SOL K线图</h2>
+                    <div class="period-btns">
+                        <button class="period-btn" data-period="1d">1D</button>
+                        <button class="period-btn active" data-period="7d">7D</button>
+                        <button class="period-btn" data-period="30d">30D</button>
+                    </div>
+                </div>
+                <div id="chartContainer" class="chart-container"></div>
+                <div id="indicators" class="indicators-grid">
+                    <div class="indicator-item">
+                        <div class="indicator-label">MA(7)</div>
+                        <div class="indicator-value" id="ma7">-</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="indicator-label">MA(20)</div>
+                        <div class="indicator-value" id="ma20">-</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="indicator-label">MA(50)</div>
+                        <div class="indicator-value" id="ma50">-</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="indicator-label">RSI(14)</div>
+                        <div class="indicator-value" id="rsi14">-</div>
+                        <div class="indicator-signal" id="rsiSignal">-</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -213,6 +273,77 @@
 
         fetchData();
         setInterval(fetchData, 30000); // Update every 30s
+
+        // K-Line Chart
+        let chart, candlestickSeries;
+        let currentPeriod = '7d';
+
+        function initChart() {
+            const container = document.getElementById('chartContainer');
+            chart = LightweightCharts.createChart(container, {
+                layout: { background: { color: 'transparent' }, textColor: '#888' },
+                grid: { vertLines: { color: 'rgba(255,255,255,0.05)' }, horzLines: { color: 'rgba(255,255,255,0.05)' } },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                rightPriceScale: { borderColor: 'rgba(255,255,255,0.1)' },
+                timeScale: { borderColor: 'rgba(255,255,255,0.1)', timeVisible: true }
+            });
+            candlestickSeries = chart.addCandlestickSeries({
+                upColor: '#00c864', downColor: '#ff5050',
+                borderUpColor: '#00c864', borderDownColor: '#ff5050',
+                wickUpColor: '#00c864', wickDownColor: '#ff5050'
+            });
+            chart.timeScale().fitContent();
+        }
+
+        async function loadChartData(period = '7d') {
+            try {
+                const res = await fetch(`/api/history/SOL?period=${period}`);
+                const json = await res.json();
+                if (json.data) {
+                    const chartData = json.data.map(([time, open, high, low, close]) => ({
+                        time: Math.floor(time / 1000),
+                        open, high, low, close
+                    }));
+                    candlestickSeries.setData(chartData);
+                    chart.timeScale().fitContent();
+                }
+            } catch (e) { console.error('Chart error:', e); }
+        }
+
+        async function loadIndicators() {
+            try {
+                const res = await fetch('/api/indicators/SOL');
+                const json = await res.json();
+                if (json.indicators) {
+                    const { ma, rsi } = json.indicators;
+                    document.getElementById('ma7').textContent = ma.ma7 ? `$${ma.ma7}` : '-';
+                    document.getElementById('ma20').textContent = ma.ma20 ? `$${ma.ma20}` : '-';
+                    document.getElementById('ma50').textContent = ma.ma50 ? `$${ma.ma50}` : '-';
+                    const rsiVal = parseFloat(rsi.rsi14);
+                    document.getElementById('rsi14').textContent = rsi.rsi14 || '-';
+                    const rsiSignal = document.getElementById('rsiSignal');
+                    if (rsiVal >= 70) { rsiSignal.textContent = '超买'; rsiSignal.className = 'indicator-signal bearish'; }
+                    else if (rsiVal <= 30) { rsiSignal.textContent = '超卖'; rsiSignal.className = 'indicator-signal bullish'; }
+                    else { rsiSignal.textContent = '中性'; rsiSignal.className = 'indicator-signal neutral'; }
+                }
+            } catch (e) { console.error('Indicators error:', e); }
+        }
+
+        // Period button handlers
+        document.querySelectorAll('.period-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentPeriod = btn.dataset.period;
+                loadChartData(currentPeriod);
+            });
+        });
+
+        // Initialize chart
+        initChart();
+        loadChartData(currentPeriod);
+        loadIndicators();
+        setInterval(() => { loadChartData(currentPeriod); loadIndicators(); }, 60000);
     </script>
 </body>
 </html>

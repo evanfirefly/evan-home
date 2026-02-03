@@ -7,6 +7,40 @@ const PORT = process.env.PORT || 3000;
 const WALLET_ADDRESS = '3UcvGwXci9Xi73EBwaj6NmVvx8iHVqh5eomuTuLa6QTw';
 const USDT_MINT = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
 
+// Symbol to CoinGecko ID mapping
+const symbolToCoinGeckoId = {
+    'SOL': 'solana',
+    'BTC': 'bitcoin',
+    'ETH': 'ethereum'
+};
+
+// Calculate Simple Moving Average
+function calculateSMA(prices, period) {
+    if (prices.length < period) return null;
+    const slice = prices.slice(-period);
+    return slice.reduce((sum, p) => sum + p, 0) / period;
+}
+
+// Calculate RSI (Relative Strength Index)
+function calculateRSI(prices, period = 14) {
+    if (prices.length < period + 1) return null;
+    const changes = [];
+    for (let i = 1; i < prices.length; i++) {
+        changes.push(prices[i] - prices[i - 1]);
+    }
+    const recentChanges = changes.slice(-period);
+    let gains = 0, losses = 0;
+    for (const change of recentChanges) {
+        if (change > 0) gains += change;
+        else losses += Math.abs(change);
+    }
+    const avgGain = gains / period;
+    const avgLoss = losses / period;
+    if (avgLoss === 0) return 100;
+    const rs = avgGain / avgLoss;
+    return 100 - (100 / (1 + rs));
+}
+
 // Helper to fetch JSON with timeout
 function fetchJson(url, timeout = 10000) {
     return new Promise((resolve, reject) => {
@@ -148,6 +182,49 @@ const server = http.createServer(async (req, res) => {
         const balance = await getWalletBalance();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, address: WALLET_ADDRESS, data: balance, timestamp: new Date().toISOString() }));
+    }
+    // API: Historical OHLC data
+    else if (req.url.startsWith('/api/history/')) {
+        const urlParts = new URL(req.url, `http://localhost:${PORT}`);
+        const symbol = req.url.split('/api/history/')[1].split('?')[0].toUpperCase();
+        const period = urlParts.searchParams.get('period') || '7d';
+        const periodToDays = { '1d': 1, '7d': 7, '30d': 30, '90d': 90 };
+        const days = periodToDays[period] || 7;
+        const coinId = symbolToCoinGeckoId[symbol] || 'solana';
+        try {
+            const data = await fetchJson(`https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ symbol, period, data }));
+        } catch (e) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: e.message }));
+        }
+    }
+    // API: Technical indicators
+    else if (req.url.startsWith('/api/indicators/')) {
+        const symbol = req.url.split('/api/indicators/')[1].split('?')[0].toUpperCase();
+        const coinId = symbolToCoinGeckoId[symbol] || 'solana';
+        try {
+            const data = await fetchJson(`https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=30`);
+            const closePrices = data.map(candle => candle[4]);
+            const latestPrice = closePrices[closePrices.length - 1];
+            const ma7 = calculateSMA(closePrices, 7);
+            const ma20 = calculateSMA(closePrices, 20);
+            const ma50 = calculateSMA(closePrices, 50);
+            const rsi14 = calculateRSI(closePrices, 14);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                symbol, price: latestPrice,
+                indicators: {
+                    ma: { ma7: ma7?.toFixed(2), ma20: ma20?.toFixed(2), ma50: ma50?.toFixed(2) },
+                    rsi: { rsi14: rsi14?.toFixed(2) }
+                },
+                timestamp: Date.now()
+            }));
+        } catch (e) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: e.message }));
+        }
     }
     // 404
     else {
